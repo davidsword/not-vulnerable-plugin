@@ -1,6 +1,8 @@
 # Not Vulnerable Plugin
 
-This is my take on securing the [Intentionally Vulnerable Plugin](https://make.wordpress.org/plugins/2013/04/09/intentionally-vulnerable-plugin/). For anyone unaware, the Intentionally Vulnerable Plugin is a security code challenge from WordPress that highlights and showcases common security vulnerabilities and mis-steps that may occur in WordPress plugins and themes. I've gone through the plugin, cleaned up the code and fixed all the security holes.
+This is my take on securing the [Intentionally Vulnerable Plugin](https://make.wordpress.org/plugins/2013/04/09/intentionally-vulnerable-plugin/). For anyone unaware, the Intentionally Vulnerable Plugin is a security code challenge from WordPress that highlights and showcases common security vulnerabilities and missteps that may occur in WordPress plugins and themes.
+
+For this challenge, I've gone through the original code, cleaned up the code, fixed all the security holes, and documented points of vulnerability.
 
 ## My Changes
 
@@ -40,25 +42,27 @@ Cross-site scripting (XSS):
 
 SQL Injection:
 -   Changed: Used `$wpdb->delete()` instead of vulnerable `$wpdb->query("DELETE ... esc_sql())`.
--   Changed: Use `$wpdb->prepare` instead of `esc_sql()` to properly escape values in `SELECT` query.
--   Changed: Improper database `->query("INSERT..` to use proper `->insert(..` method
+-   Changed: Used `$wpdb->prepare` properly instead of `"SELECT ... ".esc_sql(` to properly escape values
+-   Changed: Used `->insert()` method instead to sanitize and escape variables, instead of vulnerable `$wpdb->query( $wpdb->prepare( "INSERT.. '$var' ..")`.
 
-Cross-site Request Forgery :
+Cross-Site Request Forgery (CSRF):
 -   Changed: Used `wp_verify_none()` instead of `check_admin_referer()` as the later returns false and doesn't use custom nonce names which can result in coding mistakes that can lead to unintended access andor running of code.
+-   Changed: logic of `!isset($_REQUEST['_wpnonce'])` conditional which made it bypass-able.
 
 Redirects:
+-   Added: `exit` or `return` after redirects to prevent unintended code execution.
 -   Changed: Use `wp_safe_redirect()` instead of `wp_redirect()`.
--   Changed: Used hard coded redirect instead of doubly exploitable `input[name=redirect]{$_SERVER['PHP_SELF']}` value.
+-   Changed: Used hard coded redirect instead of the doubly-exploitable `input[name=redirect]{$_SERVER['PHP_SELF']}` value.
 
 Bad Coding:
 -   Changed: `dvp_change_settings()`'s' enormous security hole that made the entire `\_options` table vulnerable to injection and alteration (looping through user-supplied array dynamically - see inline doc for full details).
--   Changed: Uses `wp_login_failed` hook instead of `wp_authenticate_user` to process already-confirmed-failed log ins (instead of handling the plain-text password).
--   Removed: Plain text password logging and validating for plugin. Unnecessary and storing plain text password.
+-   Changed: Uses `wp_login_failed` hook instead of `wp_authenticate_user` to process already-confirmed-failed log ins (instead of validating log in and handling the plain-text password).
+-   Removed: Plain text password handling and logging (saving a plain text password can lead to sensitive data exposure with any breach, and violates the users privacy/rights).
 
 Misconfiguration:
 -   Added: `index.php` with _"silence is golden"_ message to prevent directory exploit.
 -   Added: `ABSPATH` constant check to insure files not loaded directly.
--   Added: `Requires PHP: 5.6` restriction to force users to upgrade their servers.
+-   Added: `Requires PHP: 5.6` requirement (although it'd be nice to force 7.x on everyone!).
 
 For full details of security changes and additions, please read inline doc in `\*.php` pages.
 
@@ -66,12 +70,12 @@ For full details of security changes and additions, please read inline doc in `\
 
 -   Added: `readme.txt` for proper WordPress plugin rendering.
 -   Added: `README.md` file for Github presentation.
--   Added: Internationalization on all text strings, and `/languages/`.
+-   Added: l10n support on all text strings, and `.pot` in `/languages/`.
 -   Added: Completed functionality of "Ignore known users" settings in logger.
--   Added: Using `$wpdb`'s' `->prefix` &amp; `->get_charset_collate` in `dvp_install()` to properly name and character set the table.
 -   Added: Names on blank instances of `wp_nonce_field()` for better understanding of what's where.
 -   Added: Conditional check on `dvp_install()`'s initial `update_option` to not overwrite users setting if re-activated.
--   Added: admin_notices on Settings change and log delete.
+-   Added: `admin_notices` on settings change and log deletion.
+-   Changed: Using `$wpdb->prefix` &amp; `->get_charset_collate` in `dvp_install()` to properly name and character set the table.
 -   Changed: `ip` database column to `39` character length in for IPv6 support.
 -   Changed: Wrapped plugin in classes to prevent any name collisions, as this plugin may already be on reviewers setup.
 -   Changed: `vulnerable.php` split into two classes for easier code structure.
