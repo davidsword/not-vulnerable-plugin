@@ -106,11 +106,9 @@ Is the vulnerability for a subscriber level account reading the `secrete_option`
 
 2) The `esc_sql()` function works when wrapped in quotes. It does not properly escape code when used without quotes.
 
-3) The `esc_sql()` function contains `$id` which has a value of unescaped value of `$_GET['id']`.
+3) The `esc_sql()` function contains `$id`, which is an unescaped `$_GET['id']` value.
 
-These three factors, this now means injection is possible.
-
-An attacker could create a request similar to:
+These three factors make injection possible. An attacker could create a request similar to:
 
 ```
 &id=1 UNION SELECT option_id, option_name, option_value, autoload FROM wp_options
@@ -122,7 +120,6 @@ Which would create the query:
 SELECT * FROM wp_login_audit WHERE ID = 1 UNION SELECT option_id, option_name, option_value, autoload FROM wp_options
 ```
 
-Which would return all of the `options` table contents as if it were the `login_audit` table. The data is merged, returning with the login_audit's column names. The `secret_option` value would be visible in the audit log table in plain text, as if it were a time value.
-
+Which would return all of the logs, as well as the entire `wp_options` table contents to `$log`. The `wp_options` table is basically appended to `wp_login_audit` table. The `secret_option` name and it's value would be visible within the audit log's HTML table, in plain text, as if it were a username and time value.
 
 Note This UNION method works in my case because I've removed the passwords column in `wp_login_audit` for other reasons, so the column counts match. If the column count wasn't the same, with a slightly different query the injection could still work.
