@@ -42,6 +42,8 @@ if ( ! class_exists( 'Not_V8e' ) ) {
 
 			require dirname( __FILE__ ) . '/inc/class-not-v8e-admin.php';
 			require dirname( __FILE__ ) . '/inc/class-not-v8e-logger.php';
+
+			add_action( 'plugins_loaded', array( $this, 'load_textdomain' ) );
 		}
 
 		/**
@@ -67,6 +69,13 @@ if ( ! class_exists( 'Not_V8e' ) ) {
 			if ( ! get_option( 'dvp_unknown_logins' ) ) {
 				update_option( 'dvp_unknown_logins', 1 );
 			}
+		}
+
+		/**
+		 * Install the plugin by creating a new table if none exists.
+		 */
+		public function load_textdomain() {
+			load_plugin_textdomain( 'notv8e', false, basename( dirname( __FILE__ ) ) . '/languages' );
 		}
 	}
 
