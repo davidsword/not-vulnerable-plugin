@@ -94,14 +94,35 @@ For full details of security changes and additions, please read inline doc in `\
 
 > "with access to a subscriber level account can you find any ways of extracting the data from an option named secret_option?"
 
-The line
+[Line 102](https://gist.github.com/joncave/5348689#file-vulnerable-php-L102):
 
 ```
 $log = $wpdb->get_row( "SELECT * FROM login_audit WHERE ID = " . esc_sql( $id ), ARRAY_A );
 ```
 
-is the best way to exploit the database. This function calls the database in `dvp_view_log()` which has no user caps check.
+Is the vulnerability for a subscriber level account reading the `secrete_option`.
 
-You would inject into the query, doing a `JOIN` for the `\_options` table, where you'd put the options `name` and `value` columns as if they were `login` and `ip` columns.
+1) This function `dvp_view_log()` has no cap checks, so if the URL was known, a subscriber could access it without verification.
 
-The data would display in the table as normal, and `secret_option` would be displayed.
+2) The `esc_sql()` function works when wrapped in quotes. It does not properly escape code when used without quotes.
+
+3) The `esc_sql()` function contains `$id` which has a value of unescaped value of `$_GET['id']`.
+
+These three factors, this now means injection is possible.
+
+An attacker could create a request similar to:
+
+```
+&id=1 UNION SELECT option_id, option_name, option_value, autoload FROM wp_options
+```
+
+Which would create the query:
+
+```
+SELECT * FROM wp_login_audit WHERE ID = 1 UNION SELECT option_id, option_name, option_value, autoload FROM wp_options
+```
+
+Which would return all of the `options` table contents as if it were the `login_audit` table. The data is merged, returning with the login_audit's column names. The `secret_option` value would be visible in the audit log table in plain text, as if it were a time value.
+
+
+Note This UNION method works in my case because I've removed the passwords column in `wp_login_audit` for other reasons, so the column counts match. If the column count wasn't the same, with a slightly different query the injection could still work.
