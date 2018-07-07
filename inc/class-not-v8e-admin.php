@@ -187,7 +187,7 @@ if ( ! class_exists( 'Not_V8e_Admin' ) ) {
 							 *
 							 * @link https://gist.github.com/joncave/5348689#file-vulnerable-php-L78
 							 */
-							$complete_url = wp_nonce_url( $url, 'view-log_' . intval( $log['ID'] ) );
+							$url = wp_nonce_url( $url, 'view-log_' . intval( $log['ID'] ) );
 
 							/**
 							 * ✅🔒 SECURE 6: escape `add_query_arg()`
@@ -332,6 +332,7 @@ if ( ! class_exists( 'Not_V8e_Admin' ) ) {
 			update_option( $name, $value );
 
 			wp_safe_redirect( admin_url( 'tools.php?page=failed-logins&msg=settings' ) );
+			exit;
 		}
 
 		/**
